@@ -2,44 +2,50 @@ package command
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/gempir/go-twitch-irc/v3"
 	"github.com/senchabot-opensource/monorepo/apps/twitch-bot/internal/command/helpers"
+	"github.com/senchabot-opensource/monorepo/apps/twitch-bot/internal/models"
 	"github.com/senchabot-opensource/monorepo/packages/gosenchabot"
 )
 
 const ADD_COMMAND_ALIAS_INFO = "For example: !acmda [command_name] [command_alias(es) separated by space]"
 
-func (c *commands) AddCommandAliasCommand(context context.Context, message twitch.PrivateMessage, commandName string, params []string) {
+func (c *commands) AddCommandAliasCommand(context context.Context, message twitch.PrivateMessage, commandName string, params []string) (*models.CommandResponse, error) {
+	var cmdResp models.CommandResponse
+	cmdResp.Channel = message.Channel
+
 	if !helpers.CanExecuteCommand(context, c.service, message.Tags["badges"], message.RoomID) {
-		return
+		return nil, errors.New("CanExecuteCommand")
 	}
+
 	command, aliasCommands, check := gosenchabot.GetAliasCommandCreateParams(params)
 	if !check {
-		c.client.Twitch.Say(message.Channel, ADD_COMMAND_ALIAS_INFO)
-		return
+		cmdResp.Message = ADD_COMMAND_ALIAS_INFO
+		return &cmdResp, nil
 	}
 	twitchChannelId := message.RoomID
 
 	if infoText, check := gosenchabot.ValidateAliasCommandsLength(aliasCommands); !check {
-		c.client.Twitch.Say(message.Channel, message.User.DisplayName+", "+infoText)
-		return
+		cmdResp.Message = message.User.DisplayName + ", " + infoText
+		return &cmdResp, nil
 	}
 
 	infoText, err := c.service.CreateCommandAliases(context, command, aliasCommands, twitchChannelId, message.User.DisplayName)
 	if err != nil {
-		fmt.Println("AddCommandAlias Error: " + err.Error())
-		return
+		return nil, errors.New("AddCommandAlias Error: " + err.Error())
 	}
 	if infoText != nil {
-		c.client.Twitch.Say(message.Channel, message.User.DisplayName+", "+*infoText)
-		return
+		cmdResp.Message = message.User.DisplayName + ", " + *infoText
+		return &cmdResp, nil
 	}
 
 	commandAliasesList := strings.Join(aliasCommands, ", ")
 	fmt.Println("COMMAND_ALIAS_ADD: command_aliases:", commandAliasesList, "command_name:", command)
 
-	c.client.Twitch.Say(message.Channel, "New Command Aliases Added: "+commandAliasesList)
+	cmdResp.Message = "New Command Aliases Added: " + commandAliasesList
+	return &cmdResp, nil
 }

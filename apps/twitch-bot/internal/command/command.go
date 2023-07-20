@@ -9,13 +9,14 @@ import (
 	"github.com/gempir/go-twitch-irc/v3"
 	"github.com/senchabot-opensource/monorepo/apps/twitch-bot/client"
 	"github.com/senchabot-opensource/monorepo/apps/twitch-bot/internal/command/helpers"
+	"github.com/senchabot-opensource/monorepo/apps/twitch-bot/internal/models"
 	"github.com/senchabot-opensource/monorepo/apps/twitch-bot/internal/service"
 )
 
 type Command interface {
 	RunStaticCommand(context context.Context, cmdName string, params []string, message twitch.PrivateMessage)
 	RunDynamicCommand(context context.Context, cmdName string, message twitch.PrivateMessage)
-	GetCommands() map[string]func(context context.Context, message twitch.PrivateMessage, commandName string, params []string)
+	GetCommands() map[string]func(context context.Context, message twitch.PrivateMessage, commandName string, params []string) (*models.CommandResponse, error)
 }
 
 type commands struct {
@@ -34,14 +35,14 @@ func NewCommands(client *client.Clients, service service.Service, cooldownPeriod
 	}
 }
 
-func (c *commands) GetCommands() map[string]func(context context.Context, message twitch.PrivateMessage, commandName string, params []string) {
+func (c *commands) GetCommands() map[string]func(context context.Context, message twitch.PrivateMessage, commandName string, params []string) (*models.CommandResponse, error) {
 	// TODO: command aliases
-	var commands = map[string]func(context context.Context, message twitch.PrivateMessage, commandName string, params []string){
-		"ping":      c.PingCommand,
-		"invite":    c.InviteCommand,
-		"senchabot": c.SenchabotCommand,
-		"sukru":     c.SukruCommand,
-		"sozluk":    c.SozlukCommand,
+	var commands = map[string]func(context context.Context, message twitch.PrivateMessage, commandName string, params []string) (*models.CommandResponse, error){
+		//"ping":   c.PingCommand,
+		"invite": c.InviteCommand,
+		//"senchabot": c.SenchabotCommand,
+		//"sukru":     c.SukruCommand,
+		"sozluk": c.SozlukCommand,
 
 		"acmd": c.AddCommandCommand,
 		"ucmd": c.UpdateCommandCommand,
@@ -53,8 +54,8 @@ func (c *commands) GetCommands() map[string]func(context context.Context, messag
 		"dcmda": c.DeleteCommandAliasCommand,
 		"help":  c.HelpCommand,
 
-		"kampus":       c.KampusCommand,
-		"frontendship": c.FrontendshipCommand,
+		//		"kampus":       c.KampusCommand,
+		//		"frontendship": c.FrontendshipCommand,
 	}
 
 	return commands
@@ -67,7 +68,14 @@ func (c *commands) RunStaticCommand(context context.Context, cmdName string, par
 		if c.isUserOnCooldown(message.User.Name) {
 			return
 		}
-		cmd(context, message, cmdName, params)
+
+		cmdResp, err := cmd(context, message, cmdName, params)
+		if err != nil {
+			fmt.Println("RunCommand Error:", err.Error())
+			return
+		}
+
+		c.client.Twitch.Say(cmdResp.Channel, cmdResp.Message)
 		c.setCommandCooldown(message.User.Name)
 		c.service.SaveBotCommandActivity(context, cmdName+" "+strings.Join(params, " "), message.RoomID, message.User.DisplayName, message.User.ID)
 	}
