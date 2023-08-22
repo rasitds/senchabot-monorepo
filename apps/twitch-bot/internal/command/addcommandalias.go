@@ -36,8 +36,8 @@ func (c *commands) AddCommandAliasCommand(context context.Context, message twitc
 
 	for _, k := range aliasCommands {
 		if c.IsSystemCommand(k) {
-			c.client.Twitch.Say(message.Channel, fmt.Sprintf("%v, the command \"%v\" is used as system command", message.User.DisplayName, k))
-			return
+			cmdResp.Message = fmt.Sprintf("%v, the command \"%v\" is used as system command", message.User.DisplayName, k)
+			return &cmdResp, nil
 		}
 	}
 
