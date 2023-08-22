@@ -40,7 +40,7 @@ func NewCommands(client *client.Clients, service service.Service, cooldownPeriod
 func (c *commands) GetCommands() commandFuncReturn {
 	// TODO: command aliases
 	var commands = commandFuncReturn{
-		//"ping":   c.PingCommand,
+		"ping":   c.PingCommand,
 		"invite": c.InviteCommand,
 		"sozluk": c.SozlukCommand,
 
