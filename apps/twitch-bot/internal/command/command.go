@@ -13,9 +13,11 @@ import (
 	"github.com/senchabot-opensource/monorepo/packages/gosenchabot/models"
 )
 
+type commandFuncReturn map[string]func(context context.Context, message twitch.PrivateMessage, commandName string, params []string) (*models.CommandResponse, error)
+
 type Command interface {
 	RunCommand(context context.Context, cmdName string, params []string, message twitch.PrivateMessage)
-	GetCommands() map[string]func(context context.Context, message twitch.PrivateMessage, commandName string, params []string) (*models.CommandResponse, error)
+	GetCommands() commandFuncReturn
 	Say(ctx context.Context, message twitch.PrivateMessage, cmdName string, messageContent string)
 }
 
@@ -35,9 +37,9 @@ func NewCommands(client *client.Clients, service service.Service, cooldownPeriod
 	}
 }
 
-func (c *commands) GetCommands() map[string]func(context context.Context, message twitch.PrivateMessage, commandName string, params []string) (*models.CommandResponse, error) {
+func (c *commands) GetCommands() commandFuncReturn {
 	// TODO: command aliases
-	var commands = map[string]func(context context.Context, message twitch.PrivateMessage, commandName string, params []string) (*models.CommandResponse, error){
+	var commands = commandFuncReturn{
 		//"ping":   c.PingCommand,
 		"invite": c.InviteCommand,
 		"sozluk": c.SozlukCommand,
@@ -112,7 +114,7 @@ func (c *commands) RunCommand(context context.Context, cmdName string, params []
 			fmt.Println("RunCommand Error:", err.Error())
 			return
 		}
-    c.Say(context, message, cmdName+" "+strings.Join(params, " "), cmdResp.Message)
+		c.Say(context, message, cmdName+" "+strings.Join(params, " "), cmdResp.Message)
 		return
 	}
 	// SYSTEM COMMANDS
