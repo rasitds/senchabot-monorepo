@@ -34,6 +34,13 @@ func (c *commands) AddCommandAliasCommand(context context.Context, message twitc
 		return &cmdResp, nil
 	}
 
+	for _, k := range aliasCommands {
+		if c.IsSystemCommand(k) {
+			c.client.Twitch.Say(message.Channel, fmt.Sprintf("%v, the command \"%v\" is used as system command", message.User.DisplayName, k))
+			return
+		}
+	}
+
 	infoText, err := c.service.CreateCommandAliases(context, command, aliasCommands, twitchChannelId, message.User.DisplayName)
 	if err != nil {
 		return nil, errors.New("AddCommandAlias Error: " + err.Error())

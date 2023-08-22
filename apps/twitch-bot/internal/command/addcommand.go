@@ -32,6 +32,11 @@ func (c *commands) AddCommandCommand(context context.Context, message twitch.Pri
 		return &cmdResp, nil
 	}
 
+	if c.IsSystemCommand(command_name) {
+		c.client.Twitch.Say(message.Channel, fmt.Sprintf("%v, the command \"%v\" is used as system command", message.User.DisplayName, command_name))
+		return
+	}
+
 	infoText, err := c.service.CreateBotCommand(context, command_name, command_content, message.RoomID, message.User.DisplayName)
 	if err != nil {
 		return nil, err
