@@ -17,7 +17,7 @@ func (c *commands) AddCommandCommand(context context.Context, message twitch.Pri
 	cmdResp.Channel = message.Channel
 
 	if !helpers.CanExecuteCommand(context, c.service, message.Tags["badges"], message.RoomID) {
-		return nil, errors.New("cannot execute command")
+		return nil, errors.New(message.User.DisplayName + " cannot execute the command")
 	}
 
 	command_name, command_content, check := helpers.GetCommandCreateUpdateParams(params)

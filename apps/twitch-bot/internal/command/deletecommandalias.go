@@ -18,7 +18,7 @@ func (c *commands) DeleteCommandAliasCommand(context context.Context, message tw
 	var cmdResp models.CommandResponse
 
 	if !helpers.CanExecuteCommand(context, c.service, message.Tags["badges"], message.RoomID) {
-		return nil, errors.New("CanExecuteCommand")
+		return nil, errors.New(message.User.DisplayName + " cannot execute the command")
 	}
 
 	if check := helpers.IsCommandParamsLengthEqualToOne(params); !check {

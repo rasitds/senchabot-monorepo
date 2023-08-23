@@ -19,7 +19,7 @@ func (c *commands) AddCommandAliasCommand(context context.Context, message twitc
 	cmdResp.Channel = message.Channel
 
 	if !helpers.CanExecuteCommand(context, c.service, message.Tags["badges"], message.RoomID) {
-		return nil, errors.New("CanExecuteCommand")
+		return nil, errors.New(message.User.DisplayName + " cannot execute the command")
 	}
 
 	command, aliasCommands, check := gosenchabot.GetAliasCommandCreateParams(params)
