@@ -14,7 +14,6 @@ const ADD_COMMAND_INFO = "For example: !acmd [command_name] [command_content]"
 
 func (c *commands) AddCommandCommand(context context.Context, message twitch.PrivateMessage, commandName string, params []string) (*models.CommandResponse, error) {
 	var cmdResp models.CommandResponse
-	cmdResp.Channel = message.Channel
 
 	if !helpers.CanExecuteCommand(context, c.service, message.Tags["badges"], message.RoomID) {
 		return nil, errors.New(message.User.DisplayName + " cannot execute the command")

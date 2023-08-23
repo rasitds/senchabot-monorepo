@@ -13,7 +13,6 @@ import (
 
 func (c *commands) InviteCommand(context context.Context, message twitch.PrivateMessage, commandName string, params []string) (*models.CommandResponse, error) {
 	var cmdResp models.CommandResponse
-	cmdResp.Channel = message.Channel
 
 	if message.Channel != "senchabot" {
 		return nil, errors.New("command did not executed in senchabot")

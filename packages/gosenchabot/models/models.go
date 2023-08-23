@@ -33,7 +33,6 @@ type BotActionActivity struct {
 }
 
 type CommandResponse struct {
-	Channel string
 	Message string
 }
 

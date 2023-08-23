@@ -10,7 +10,6 @@ import (
 
 func (c *commands) SozlukCommand(context context.Context, message twitch.PrivateMessage, commandName string, params []string) (*models.CommandResponse, error) {
 	var cmdResp models.CommandResponse
-	cmdResp.Channel = message.Channel
 	sozlukResp, err := gosenchabot.SozlukCommand(params)
 	if err != nil {
 		return nil, err

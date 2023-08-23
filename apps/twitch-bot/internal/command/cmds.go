@@ -13,8 +13,6 @@ func (c *commands) CmdsCommand(context context.Context, message twitch.PrivateMe
 	var commandListArr []string
 	var commandListString string
 
-	cmdResp.Channel = message.Channel
-
 	commandList, err := c.service.GetCommandList(context, message.RoomID)
 	if err != nil {
 		return nil, err

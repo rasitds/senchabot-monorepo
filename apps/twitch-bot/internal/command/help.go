@@ -12,8 +12,6 @@ func (c *commands) HelpCommand(context context.Context, message twitch.PrivateMe
 	var cmdResp models.CommandResponse
 	var commmandList []string
 
-	cmdResp.Channel = message.Channel
-
 	commandListMap := c.GetCommands()
 	for k := range commandListMap {
 		commmandList = append(commmandList, k)

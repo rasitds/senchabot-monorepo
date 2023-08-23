@@ -16,7 +16,6 @@ const DELETE_COMMAND_INFO = "For example: !dcmd [command_name]"
 
 func (c *commands) DeleteCommandCommand(context context.Context, message twitch.PrivateMessage, commandName string, params []string) (*models.CommandResponse, error) {
 	var cmdResp models.CommandResponse
-	cmdResp.Channel = message.Channel
 
 	if !helpers.CanExecuteCommand(context, c.service, message.Tags["badges"], message.RoomID) {
 		return nil, errors.New(message.User.DisplayName + " cannot execute the command")
