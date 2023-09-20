@@ -10,6 +10,7 @@ import (
 	"github.com/senchabot-opensource/monorepo/apps/twitch-bot/client"
 	"github.com/senchabot-opensource/monorepo/apps/twitch-bot/internal/command/helpers"
 	"github.com/senchabot-opensource/monorepo/apps/twitch-bot/internal/service"
+	"github.com/senchabot-opensource/monorepo/packages/gosenchabot"
 	"github.com/senchabot-opensource/monorepo/packages/gosenchabot/models"
 )
 
@@ -100,7 +101,8 @@ func (c *commands) Run(context context.Context, cmdName string, params []string,
 		fmt.Println("[USER COMMAND ERROR]:", err.Error())
 	}
 	if cmdData != nil {
-		formattedCommandContent := helpers.FormatCommandContent(cmdData, message)
+		cmdVar := helpers.GetCommandVariables(cmdData, message)
+		formattedCommandContent := gosenchabot.FormatCommandContent(cmdVar)
 		c.Respond(context, message, cmdName, formattedCommandContent)
 		return
 	}
@@ -129,7 +131,8 @@ func (c *commands) Run(context context.Context, cmdName string, params []string,
 		return
 	}
 
-	formattedCommandContent := helpers.FormatCommandContent(cmdData, message)
+	cmdVar := helpers.GetCommandVariables(cmdData, message)
+	formattedCommandContent := gosenchabot.FormatCommandContent(cmdVar)
 	c.Respond(context, message, cmdName, formattedCommandContent)
 	// GLOBAL COMMANDS
 }

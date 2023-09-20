@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/senchabot-opensource/monorepo/apps/discord-bot/internal/command/helpers"
 	"github.com/senchabot-opensource/monorepo/apps/discord-bot/internal/service"
+	"github.com/senchabot-opensource/monorepo/packages/gosenchabot"
 )
 
 type CommandFunc func(context context.Context, s *discordgo.Session, i *discordgo.InteractionCreate, service service.Service)
@@ -42,16 +44,16 @@ func New(dS *discordgo.Session, token string, service service.Service, cooldownP
 
 func (c *commands) GetCommands() CommandMap {
 	var commands = CommandMap{
-		"cmds":   c.CmdsCommand,
-		"acmd":   c.AddCmdCommand,
-		"ucmd":   c.UpdateCmdCommand,
-		"dcmd":   c.DeleteCmdCommand,
-		"acmda":  c.AddCmdAliasCommand,
-		"dcmda":  c.DeleteCmdAliasCommand,
-		"set":    c.SetCommand,
-		"delete": c.DeleteCommand,
-		"purge":  c.PurgeCommand,
-		"invite": c.InviteCommand,
+		"cmds":       c.CmdsCommand,
+		"acmd":       c.AddCommandCommand,
+		"ucmd":       c.UpdateCommandCommand,
+		"dcmd":       c.DeleteCommandCommand,
+		"acmda":      c.AddCommandAliasCommand,
+		"dcmda":      c.DeleteCommandAliasCommand,
+		"set-twitch": c.SetTwitchCommand,
+		"del-twitch": c.DelTwitchCommand,
+		"purge":      c.PurgeCommand,
+		"invite":     c.InviteCommand,
 	}
 
 	return commands
@@ -92,8 +94,9 @@ func (c *commands) Run(ctx context.Context, cmdName string, params []string, m *
 		fmt.Println("[USER COMMAND ERROR]:", err.Error())
 	}
 	if cmdData != nil {
-		//formattedCommandContent := helpers.FormatCommandContent(cmdData, m)
-		c.Respond(ctx, m, cmdName, cmdData.CommandContent)
+		cmdVar := helpers.GetCommandVariables(c.dS, cmdData, m)
+		formattedCommandContent := gosenchabot.FormatCommandContent(cmdVar)
+		c.Respond(ctx, m, cmdName, formattedCommandContent)
 		return
 	}
 	// USER COMMANDS
@@ -108,8 +111,9 @@ func (c *commands) Run(ctx context.Context, cmdName string, params []string, m *
 		return
 	}
 
-	//formattedCommandContent := helpers.FormatCommandContent(cmdData, m)
-	c.Respond(ctx, m, cmdName, cmdData.CommandContent)
+	cmdVar := helpers.GetCommandVariables(c.dS, cmdData, m)
+	formattedCommandContent := gosenchabot.FormatCommandContent(cmdVar)
+	c.Respond(ctx, m, cmdName, formattedCommandContent)
 	// GLOBAL COMMANDS
 }
 
@@ -156,6 +160,7 @@ var (
 			Name:        "cmds",
 			Description: "Command list.",
 		},
+		// acmd
 		{
 			Name:                     "acmd",
 			Description:              "Add a new custom command.",
@@ -175,6 +180,7 @@ var (
 				},
 			},
 		},
+		// ucmd
 		{
 			Name:                     "ucmd",
 			Description:              "Update a custom command.",
@@ -194,6 +200,7 @@ var (
 				},
 			},
 		},
+		// dcmd
 		{
 			Name:                     "dcmd",
 			Description:              "Delete a custom command.",
@@ -207,6 +214,7 @@ var (
 				},
 			},
 		},
+		// acmda
 		{
 			Name:                     "acmda",
 			Description:              "Add command aliases to a command.",
@@ -226,6 +234,7 @@ var (
 				},
 			},
 		},
+		// dcmda
 		{
 			Name:                     "dcmda",
 			Description:              "Delete a command alias.",
@@ -239,84 +248,16 @@ var (
 				},
 			},
 		},
+		// SET-TWITCH
 		{
-			Name:        "set",
+			Name:        "set-twitch",
 			Description: "Discord bot configuration",
 			DescriptionLocalizations: &map[discordgo.Locale]string{
 				discordgo.Turkish: "Discord botunu yapılandırma ayarları",
 			},
 			DefaultMemberPermissions: &setdeletePermissions,
 			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Name:        "stream-anno-default-channel",
-					Description: "Set the default channel for live stream announcements.",
-					DescriptionLocalizations: map[discordgo.Locale]string{
-						discordgo.Turkish: "Yayın duyuru mesajlarının atılacağı varsayılan kanalı ayarla.",
-					},
-					Type: discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Type:        discordgo.ApplicationCommandOptionChannel,
-							Name:        "channel-name",
-							Description: "Text channel",
-							DescriptionLocalizations: map[discordgo.Locale]string{
-								discordgo.Turkish: "Yazı kanalı",
-							},
-							ChannelTypes: []discordgo.ChannelType{
-								discordgo.ChannelTypeGuildNews,
-								discordgo.ChannelTypeGuildText,
-							},
-							Required: true,
-						},
-					},
-				},
-				{
-					Name:        "stream-anno-default-content",
-					Description: "Default message content for live stream announcements.",
-					DescriptionLocalizations: map[discordgo.Locale]string{
-						discordgo.Turkish: "Varsayılan yayın duyuru mesajı ayarla.",
-					},
-					Type: discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Type:        discordgo.ApplicationCommandOptionString,
-							Name:        "announcement-content",
-							Description: "Stream announcement content ({twitch.username} {twitch.url} {stream.category} {stream.title})",
-							DescriptionLocalizations: map[discordgo.Locale]string{
-								discordgo.Turkish: "Yayın mesaj duyuru içeriği ({twitch.username} {twitch.url} {stream.category} {stream.title})",
-							},
-							Required: true,
-						},
-					},
-				},
-				{
-					Name:        "stream-anno-custom-content",
-					Description: "Streamer specific custom live stream announcement message content.",
-					DescriptionLocalizations: map[discordgo.Locale]string{
-						discordgo.Turkish: "Yayıncıya özgü yayın duyuru mesajı ayarla.",
-					},
-					Type: discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Type:        discordgo.ApplicationCommandOptionString,
-							Name:        "twitch-username-or-url",
-							Description: "Twitch profile url or username",
-							DescriptionLocalizations: map[discordgo.Locale]string{
-								discordgo.Turkish: "Twitch kullanıcı profil linki veya kullanıcı adı",
-							},
-							Required: true,
-						},
-						{
-							Type:        discordgo.ApplicationCommandOptionString,
-							Name:        "announcement-content",
-							Description: "Stream announcement content ({twitch.username} {twitch.url} {stream.category} {stream.title})",
-							DescriptionLocalizations: map[discordgo.Locale]string{
-								discordgo.Turkish: "Yayın mesaj duyuru içeriği ({twitch.username} {twitch.url} {stream.category} {stream.title})",
-							},
-							Required: true,
-						},
-					},
-				},
+				// set-twitch streamer
 				{
 					Name:        "streamer",
 					Description: "Add a streamer for live stream announcements. You can specify custom channel.",
@@ -336,7 +277,7 @@ var (
 						},
 						{
 							Type:        discordgo.ApplicationCommandOptionChannel,
-							Name:        "channel-name",
+							Name:        "channel",
 							Description: "Text channel for live stream announcements",
 							DescriptionLocalizations: map[discordgo.Locale]string{
 								discordgo.Turkish: "Duyuruların yapılacağı yazı kanalı adı",
@@ -349,8 +290,90 @@ var (
 						},
 					},
 				},
+				// set-twitch announcement
 				{
-					Name:        "stream-event-channel",
+					Name:        "announcement",
+					Description: "Announcement group",
+					Options: []*discordgo.ApplicationCommandOption{
+						// set-twitch announcement default-channel
+						{
+							Name:        "default-channel",
+							Description: "Set the default channel for live stream announcements.",
+							DescriptionLocalizations: map[discordgo.Locale]string{
+								discordgo.Turkish: "Yayın duyuru mesajlarının atılacağı varsayılan kanalı ayarla.",
+							},
+							Type: discordgo.ApplicationCommandOptionSubCommand,
+							Options: []*discordgo.ApplicationCommandOption{
+								{
+									Type:        discordgo.ApplicationCommandOptionChannel,
+									Name:        "channel",
+									Description: "Text channel",
+									DescriptionLocalizations: map[discordgo.Locale]string{
+										discordgo.Turkish: "Yazı kanalı",
+									},
+									ChannelTypes: []discordgo.ChannelType{
+										discordgo.ChannelTypeGuildNews,
+										discordgo.ChannelTypeGuildText,
+									},
+									Required: true,
+								},
+							},
+						},
+						// set-twitch announcement default-content
+						{
+							Name:        "default-content",
+							Description: "Default message content for live stream announcements.",
+							DescriptionLocalizations: map[discordgo.Locale]string{
+								discordgo.Turkish: "Varsayılan yayın duyuru mesajı ayarla.",
+							},
+							Type: discordgo.ApplicationCommandOptionSubCommand,
+							Options: []*discordgo.ApplicationCommandOption{
+								{
+									Type:        discordgo.ApplicationCommandOptionString,
+									Name:        "announcement-content",
+									Description: "Stream announcement content ({twitch.username} {twitch.url} {stream.category} {stream.title})",
+									DescriptionLocalizations: map[discordgo.Locale]string{
+										discordgo.Turkish: "Yayın mesaj duyuru içeriği ({twitch.username} {twitch.url} {stream.category} {stream.title})",
+									},
+									Required: true,
+								},
+							},
+						},
+						// set-twitch announcement custom-content
+						{
+							Name:        "custom-content",
+							Description: "Streamer specific custom live stream announcement message content.",
+							DescriptionLocalizations: map[discordgo.Locale]string{
+								discordgo.Turkish: "Yayıncıya özgü yayın duyuru mesajı ayarla.",
+							},
+							Type: discordgo.ApplicationCommandOptionSubCommand,
+							Options: []*discordgo.ApplicationCommandOption{
+								{
+									Type:        discordgo.ApplicationCommandOptionString,
+									Name:        "twitch-username-or-url",
+									Description: "Twitch profile url or username",
+									DescriptionLocalizations: map[discordgo.Locale]string{
+										discordgo.Turkish: "Twitch kullanıcı profil linki veya kullanıcı adı",
+									},
+									Required: true,
+								},
+								{
+									Type:        discordgo.ApplicationCommandOptionString,
+									Name:        "announcement-content",
+									Description: "Stream announcement content ({twitch.username} {twitch.url} {stream.category} {stream.title})",
+									DescriptionLocalizations: map[discordgo.Locale]string{
+										discordgo.Turkish: "Yayın mesaj duyuru içeriği ({twitch.username} {twitch.url} {stream.category} {stream.title})",
+									},
+									Required: true,
+								},
+							},
+						},
+					},
+					Type: discordgo.ApplicationCommandOptionSubCommandGroup,
+				},
+				// set-twitch event-channel
+				{
+					Name:        "event-channel",
 					Description: "Select the live stream announcements channel to create Discord events for live streams.",
 					DescriptionLocalizations: map[discordgo.Locale]string{
 						discordgo.Turkish: "Canlı yayınların Discord etkinliklerini oluşturmak için canlı yayın duyuruları kanalını seç.",
@@ -359,7 +382,7 @@ var (
 					Options: []*discordgo.ApplicationCommandOption{
 						{
 							Type:        discordgo.ApplicationCommandOptionChannel,
-							Name:        "channel-name",
+							Name:        "channel",
 							Description: "Text channel to follow Twitch live stream announcements",
 							DescriptionLocalizations: map[discordgo.Locale]string{
 								discordgo.Turkish: "Twitch yayın duyurularının takip edileceği yazı kanalı",
@@ -374,6 +397,7 @@ var (
 				},
 			},
 		},
+		// PURGE
 		{
 			Name:        "purge",
 			Description: "Purge commands",
@@ -382,6 +406,7 @@ var (
 			},
 			DefaultMemberPermissions: &purgePermissions,
 			Options: []*discordgo.ApplicationCommandOption{
+				// purge events
 				{
 					Name:        "events",
 					Description: "Cancel all scheduled events.",
@@ -390,6 +415,7 @@ var (
 					},
 					Type: discordgo.ApplicationCommandOptionSubCommand,
 				},
+				// purge last-100-channel-messages
 				{
 					Name:        "last-100-channel-messages",
 					Description: "Purge messages not older than 14 days containing certain characters or sent by centain username.",
@@ -399,7 +425,7 @@ var (
 					Type: discordgo.ApplicationCommandOptionSubCommand,
 					Options: []*discordgo.ApplicationCommandOption{
 						{
-							Name:        "message-content-contains",
+							Name:        "message-content",
 							Description: "certain characters that contain in messages",
 							DescriptionLocalizations: map[discordgo.Locale]string{
 								discordgo.Turkish: "silinecek mesajların içerdiği karakterler",
@@ -407,7 +433,7 @@ var (
 							Type: discordgo.ApplicationCommandOptionString,
 						},
 						{
-							Name:        "user-name-contains",
+							Name:        "username",
 							Description: "certain characters that contain in user's name or nickname",
 							DescriptionLocalizations: map[discordgo.Locale]string{
 								discordgo.Turkish: "kullanıcı adı veya takma adının içerdiği karakterler",
@@ -418,30 +444,16 @@ var (
 				},
 			},
 		},
+		// DEL-TWITCH
 		{
-			Name:        "delete",
+			Name:        "del-twitch",
 			Description: "Delete configuration setting.",
 			DescriptionLocalizations: &map[discordgo.Locale]string{
 				discordgo.Turkish: "Yapılandırma ayarlarını kaldır.",
 			},
 			DefaultMemberPermissions: &setdeletePermissions,
 			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Name:        "stream-anno-default-channel",
-					Description: "Delete the default channel configuration for live stream announcements.",
-					DescriptionLocalizations: map[discordgo.Locale]string{
-						discordgo.Turkish: "Yayın duyuru mesajlarının atılacağı varsayılan kanal ayarını kaldır.",
-					},
-					Type: discordgo.ApplicationCommandOptionSubCommand,
-				},
-				{
-					Name:        "stream-anno-default-content",
-					Description: "Delete the default announcement message content configuration.",
-					DescriptionLocalizations: map[discordgo.Locale]string{
-						discordgo.Turkish: "Varsayılan yayın duyuru mesajını sil.",
-					},
-					Type: discordgo.ApplicationCommandOptionSubCommand,
-				},
+				// del-twitch streamer
 				{
 					Name:        "streamer",
 					Description: "Delete the stream from live stream announcements.",
@@ -461,27 +473,55 @@ var (
 						},
 					},
 				},
+				// del-twitch announcement
 				{
-					Name:        "stream-anno-custom-content",
-					Description: "Delete the streamer specific custom live stream announcement message content.",
-					DescriptionLocalizations: map[discordgo.Locale]string{
-						discordgo.Turkish: "Yayıncıya özgü yayın duyuru mesajını sil.",
-					},
-					Type: discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "announcement",
+					Description: "Annoucement group",
 					Options: []*discordgo.ApplicationCommandOption{
+						// del-twitch announcement default-channel
 						{
-							Type:        discordgo.ApplicationCommandOptionString,
-							Name:        "twitch-username-or-url",
-							Description: "Twitch profile url or username",
+							Name:        "default-channel",
+							Description: "Delete the default channel configuration for live stream announcements.",
 							DescriptionLocalizations: map[discordgo.Locale]string{
-								discordgo.Turkish: "Twitch kullanıcı profil linki veya kullanıcı adı",
+								discordgo.Turkish: "Yayın duyuru mesajlarının atılacağı varsayılan kanal ayarını kaldır.",
 							},
-							Required: true,
+							Type: discordgo.ApplicationCommandOptionSubCommand,
+						},
+						// del-twitch announcement default-content
+						{
+							Name:        "default-content",
+							Description: "Delete the default announcement message content configuration.",
+							DescriptionLocalizations: map[discordgo.Locale]string{
+								discordgo.Turkish: "Varsayılan yayın duyuru mesajını sil.",
+							},
+							Type: discordgo.ApplicationCommandOptionSubCommand,
+						},
+						// del-twitch announcement custom-content
+						{
+							Name:        "custom-content",
+							Description: "Delete the streamer specific custom live stream announcement message content.",
+							DescriptionLocalizations: map[discordgo.Locale]string{
+								discordgo.Turkish: "Yayıncıya özgü yayın duyuru mesajını sil.",
+							},
+							Type: discordgo.ApplicationCommandOptionSubCommand,
+							Options: []*discordgo.ApplicationCommandOption{
+								{
+									Type:        discordgo.ApplicationCommandOptionString,
+									Name:        "twitch-username-or-url",
+									Description: "Twitch profile url or username",
+									DescriptionLocalizations: map[discordgo.Locale]string{
+										discordgo.Turkish: "Twitch kullanıcı profil linki veya kullanıcı adı",
+									},
+									Required: true,
+								},
+							},
 						},
 					},
+					Type: discordgo.ApplicationCommandOptionSubCommandGroup,
 				},
+				// del-twitch event-channel
 				{
-					Name:        "stream-event-channel",
+					Name:        "event-channel",
 					Description: "Delete the live stream announcements channel setting to create Discord events for live streams.",
 					DescriptionLocalizations: map[discordgo.Locale]string{
 						discordgo.Turkish: "Canlı yayınların Discord etkinliklerini oluşturmak için canlı yayın duyuruları kanalını seç.",
@@ -490,7 +530,7 @@ var (
 					Options: []*discordgo.ApplicationCommandOption{
 						{
 							Type:        discordgo.ApplicationCommandOptionChannel,
-							Name:        "channel-name",
+							Name:        "channel",
 							Description: "The text channel where Twitch live stream announcements will be unfollowed",
 							DescriptionLocalizations: map[discordgo.Locale]string{
 								discordgo.Turkish: "Twitch yayın duyurularının takipten çıkarılacağı yazı kanalı",
@@ -505,6 +545,7 @@ var (
 				},
 			},
 		},
+		// INVITE
 		{
 			Name:        "invite",
 			Description: "Senchabot Discord bot invite url.",
