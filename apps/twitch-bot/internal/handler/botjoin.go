@@ -48,6 +48,10 @@ func BotJoin(client *client.Clients, service service.Service) []string {
 		fmt.Println("TRYING TO JOIN THE TWITCH CHANNEL `" + twitchUser.Login + "`")
 		client.Twitch.Join(twitchUser.Login)
 		channelIds = append(channelIds, channel.ChannelId)
+    
+		client.Twitch.Join(BotUsername)
+    Timer(context, client, service, channel.ChannelId, channel.ChannelName)
+		return nil
 	}
 
 	return channelIds
