@@ -38,8 +38,8 @@ func InitTwitchOAuth2Token() string {
 	return twitchAccessToken
 }
 
-func GetTwitchUserInfo(username string, token string) (*models.TwitchUserInfo, error) {
-	resp, err := DoTwitchHttpReq("GET", fmt.Sprintf("/users?login=%s", username), token)
+func GetTwitchUserInfo(query string, userIdOrName string, token string) (*models.TwitchUserInfo, error) {
+	resp, err := DoTwitchHttpReq("GET", fmt.Sprintf("/users?%s=%s", query, userIdOrName), token)
 	if err != nil {
 		return nil, errors.New("(GetTwitchUserInfo) Error:" + err.Error())
 	}
@@ -49,29 +49,25 @@ func GetTwitchUserInfo(username string, token string) (*models.TwitchUserInfo, e
 	}
 
 	var data struct {
-		Data []struct {
-			ID    string `json:"id"`
-			Login string `json:"login"`
-		} `json:"data"`
+		Data []models.TwitchUserInfo `json:"data"`
 	}
-
-	//var data []twitchUserInfo
 	err = json.NewDecoder(resp.Body).Decode(&data)
 	if err != nil {
-		return nil, errors.New("Error while parsing TwitchAPI response:" + err.Error())
+		log.Printf("Error while parsing TwitchAPI response: %v", err)
+		return nil, errors.New("Error while parsing TwitchAPI response: " + err.Error())
 	}
 
 	if len(data.Data) == 0 {
-		return nil, errors.New("len(data.Data) == 0")
+		return nil, errors.New("no data.")
 	}
 
-	return (*models.TwitchUserInfo)(&data.Data[0]), nil
+	return &data.Data[0], nil
 }
 
 func GiveShoutout(streamerUsername string, broadcasterId string, token string) (*string, error) {
 	var responseText string
 	fromBroadcasterId := broadcasterId
-	toBroadcaster, err := GetTwitchUserInfo(streamerUsername, token)
+	toBroadcaster, err := GetTwitchUserInfo("login", streamerUsername, token)
 	if err != nil {
 		fmt.Println("(SoCommand) Error:", err.Error())
 		return nil, err
@@ -136,12 +132,12 @@ func CheckTwitchStreamStatus(username string, token string) (bool, string) {
 func CheckMultipleTwitchStreamer(usernames []string) []models.TwitchStreamerData {
 	params := usernames[0]
 	if len(usernames) > 1 {
-		params = usernames[0] + "&user_login="
+		params = usernames[0] + "&user_id="
 		usernames = usernames[1:]
-		params += strings.Join(usernames, "&user_login=")
+		params += strings.Join(usernames, "&user_id=")
 	}
 
-	resp, err := DoTwitchHttpReq("GET", fmt.Sprintf("/streams?user_login=%s", params), twitchAccessToken)
+	resp, err := DoTwitchHttpReq("GET", fmt.Sprintf("/streams?user_id=%s", params), twitchAccessToken)
 	if err != nil {
 		log.Printf("(CheckMultipleTwitchStreamer) Error: %v", err)
 		return nil
